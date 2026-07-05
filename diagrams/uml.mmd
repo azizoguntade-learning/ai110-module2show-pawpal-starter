@@ -1,15 +1,38 @@
 classDiagram
-    %% Replace the placeholders below with your actual classes, attributes, methods, and relationships.
-    %% Keep this file updated so it matches your final implementation.
+    %% Relationships
+    Scheduler "1" *-- "*" Pet : manages
+    Pet "1" *-- "*" Task : assigned
 
-    class ClassName {
-        +type attribute
-        +method() returnType
+    %% Classes
+    class Task {
+        +int id
+        +String description
+        +int duration_mins
+        +String priority
+        +Datetime due_time
+        +String frequency
+        +Boolean is_completed
+        +mark_complete() Boolean
+        +update_priority(String new_priority) void
+        +reschedule(Datetime new_time) void
     }
 
-    class AnotherClass {
-        +type attribute
-        +method() returnType
+    class Pet {
+        +String name
+        +String species
+        +int age
+        +List~Task~ tasks
+        +add_task(Task task) void
+        +remove_task(int task_id) void
+        +get_pending_tasks() List~Task~
     }
 
-    ClassName --> AnotherClass : relationship
+    class Scheduler {
+        +List~Pet~ pets
+        +add_pet(Pet pet) void
+        +get_all_tasks() List~Tuple~
+        +build_schedule(int available_minutes) List~Task~
+        +get_upcoming_tasks() List~Task~
+        +check_conflicts(Task new_task) Boolean
+        +generate_recurring_tasks() void
+    }
