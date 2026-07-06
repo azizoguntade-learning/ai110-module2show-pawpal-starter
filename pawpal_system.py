@@ -14,16 +14,16 @@ class Task:
     is_completed: bool = False
 
     def mark_complete(self) -> bool:
-        """Marks the task as completed."""
+        """Flags the task status to true to indicate completion."""
         self.is_completed = True
         return self.is_completed
 
     def update_priority(self, new_priority: str) -> None:
-        """Updates the priority level of the task."""
+        """Modifies the priority attribute to adjust task urgency."""
         self.priority = new_priority
 
     def reschedule(self, new_time: datetime) -> None:
-        """Reschedules the task to a new due time."""
+        """Alters the due time to shift the task schedule."""
         self.due_time = new_time
 
 @dataclass
@@ -35,15 +35,15 @@ class Pet:
     tasks: List[Task] = field(default_factory=list)
 
     def add_task(self, task: Task) -> None:
-        """Adds a new task to the pet's list."""
+        """Appends a new task to expand the pet's schedule."""
         self.tasks.append(task)
 
     def remove_task(self, task_id: int) -> None:
-        """Removes a task by its ID."""
+        """Deletes a task by ID to clear it from the schedule."""
         self.tasks = [t for t in self.tasks if t.id != task_id]
 
     def get_pending_tasks(self) -> List[Task]:
-        """Returns a list of tasks that are not yet completed."""
+        """Filters the task list to return uncompleted items."""
         return [t for t in self.tasks if not t.is_completed]
 
 @dataclass
@@ -54,11 +54,11 @@ class Owner:
     pets: List[Pet] = field(default_factory=list)
 
     def add_pet(self, pet: Pet) -> None:
-        """Registers a new pet profile to the owner."""
+        """Registers a new pet to link it with the owner."""
         self.pets.append(pet)
 
     def get_all_pet_tasks(self) -> List[Tuple[str, Task]]:
-        """Aggregates all tasks across all owned pets."""
+        """Iterates through pets to aggregate all assigned tasks."""
         all_tasks = []
         for pet in self.pets:
             for task in pet.tasks:
@@ -71,11 +71,11 @@ class Scheduler:
         self.owner = owner
 
     def get_all_tasks(self) -> List[Tuple[str, Task]]:
-        """Helper to return a list of all tasks across the owner's pets."""
+        """Calls the owner method to retrieve the complete task pool."""
         return self.owner.get_all_pet_tasks()
 
     def build_schedule(self) -> List[Tuple[str, Task]]:
-        """Builds a daily schedule based on available time and priority."""
+        """Sorts and filters tasks to generate a time-constrained daily plan."""
         priority_weights = {"high": 1, "medium": 2, "low": 3}
         pending_tasks = []
         
@@ -100,20 +100,20 @@ class Scheduler:
         return schedule
 
     def get_upcoming_tasks(self) -> List[Tuple[str, Task]]:
-        """Retrieves a sorted list of upcoming, uncompleted tasks."""
+        """Sorts pending tasks chronologically to display upcoming requirements."""
         all_tasks = self.get_all_tasks()
         upcoming = [t for t in all_tasks if not t[1].is_completed]
         return sorted(upcoming, key=lambda x: x[1].due_time)
 
     def check_conflicts(self, new_task: Task) -> bool:
-        """Evaluates if a new task overlaps exactly with an existing schedule time."""
+        """Compares execution times to detect schedule overlaps."""
         for _, task in self.get_all_tasks():
             if task.due_time == new_task.due_time:
                 return True
         return False
 
     def generate_recurring_tasks(self) -> None:
-        """Spawns the next instance for daily recurring tasks."""
+        """Duplicates completed daily tasks to sustain recurring schedules."""
         for pet in self.owner.pets:
             new_tasks = []
             for task in pet.tasks:

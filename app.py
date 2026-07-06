@@ -75,15 +75,36 @@ st.subheader("Build Schedule")
 st.caption("This button should call your scheduling logic once you implement it.")
 
 if st.button("Generate schedule"):
-    st.warning(
-        "Not implemented yet. Next step: create your scheduling logic (classes/functions) and call it here."
-    )
-    st.markdown(
-        """
-Suggested approach:
-1. Design your UML (draft).
-2. Create class stubs (no logic).
-3. Implement scheduling behavior.
-4. Connect your scheduler here and display results.
-"""
-    )
+    if not st.session_state.tasks:
+        st.warning("Please add at least one task before generating a schedule.")
+    else:
+        # Initialize backend objects using UI inputs
+        # Assuming a default of 120 available minutes for the demo
+        owner = Owner(name=owner_name, available_minutes=120) 
+        pet = Pet(name=pet_name, species=species, age=2) 
+        owner.add_pet(pet)
+
+        # Convert session state dictionaries into Task objects
+        now = datetime.now()
+        for idx, task_data in enumerate(st.session_state.tasks):
+            new_task = Task(
+                id=idx + 1,
+                description=task_data["title"],
+                duration_mins=task_data["duration_minutes"],
+                priority=task_data["priority"],
+                # Staggering the due times artificially for the UI demo
+                due_time=now + timedelta(hours=idx + 1), 
+                frequency="Once"
+            )
+            pet.add_task(new_task)
+
+        # Execute scheduling logic
+        scheduler = Scheduler(owner=owner)
+        daily_plan = scheduler.build_schedule()
+
+        # Display formatted results
+        st.success(f"Schedule successfully generated for {owner.name}'s pet(s)!")
+        
+        for p_name, task in daily_plan:
+            time_str = task.due_time.strftime("%I:%M %p")
+            st.info(f"**[{time_str}] {p_name}**: {task.description} ({task.duration_mins} min) | Priority: {task.priority.capitalize()}")
