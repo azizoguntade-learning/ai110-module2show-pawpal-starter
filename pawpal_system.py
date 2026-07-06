@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
-from typing import List, Tuple
+from typing import List, Tuple, Optional
 
 @dataclass
 class Task:
@@ -26,6 +26,7 @@ class Task:
         """Alters the due time to shift the task schedule."""
         self.due_time = new_time
 
+
 @dataclass
 class Pet:
     """Represents a pet profile."""
@@ -46,6 +47,7 @@ class Pet:
         """Filters the task list to return uncompleted items."""
         return [t for t in self.tasks if not t.is_completed]
 
+
 @dataclass
 class Owner:
     """Manages multiple pets and owner-level constraints."""
@@ -57,31 +59,38 @@ class Owner:
         """Registers a new pet to link it with the owner."""
         self.pets.append(pet)
 
-    def get_all_pet_tasks(self) -> List[Tuple[str, Task]]:
-        """Iterates through pets to aggregate all assigned tasks."""
+    def get_all_pet_tasks(self, pet_name: Optional[str] = None) -> List[Tuple[str, Task]]:
+        """Iterates through pets to aggregate assigned tasks, optionally filtering by pet name."""
         all_tasks = []
         for pet in self.pets:
+            if pet_name and pet.name != pet_name:
+                continue
             for task in pet.tasks:
                 all_tasks.append((pet.name, task))
         return all_tasks
+
 
 class Scheduler:
     """Manages scheduling logic, conflict detection, and task retrieval."""
     def __init__(self, owner: Owner):
         self.owner = owner
 
-    def get_all_tasks(self) -> List[Tuple[str, Task]]:
-        """Calls the owner method to retrieve the complete task pool."""
-        return self.owner.get_all_pet_tasks()
+    def get_all_tasks(self, pet_name: Optional[str] = None) -> List[Tuple[str, Task]]:
+        """Calls the owner method to retrieve the complete or filtered task pool."""
+        return self.owner.get_all_pet_tasks(pet_name)
 
-    def build_schedule(self) -> List[Tuple[str, Task]]:
-        """Sorts and filters tasks to generate a time-constrained daily plan."""
+    def build_schedule(self, target_date: Optional[datetime.date] = None) -> List[Tuple[str, Task]]:
+        """Sorts and filters tasks to generate a time-constrained daily plan free of overlaps."""
+        if target_date is None:
+            target_date = datetime.today().date()
+            
         priority_weights = {"high": 1, "medium": 2, "low": 3}
         pending_tasks = []
         
         for pet in self.owner.pets:
             for task in pet.get_pending_tasks():
-                pending_tasks.append((pet.name, task))
+                if task.due_time.date() == target_date:
+                    pending_tasks.append((pet.name, task))
                 
         # Sort tasks by priority weight, then by due time
         sorted_tasks = sorted(
@@ -92,12 +101,32 @@ class Scheduler:
         schedule = []
         time_used = 0
         
+        # Knapsack-lite approach: continues evaluating remaining tasks even if a prior task exceeded time constraints
         for pet_name, task in sorted_tasks:
             if time_used + task.duration_mins <= self.owner.available_minutes:
-                schedule.append((pet_name, task))
-                time_used += task.duration_mins
+                # Interval overlap detection against already scheduled tasks
+                if not self._has_schedule_conflict(task, schedule):
+                    schedule.append((pet_name, task))
+                    time_used += task.duration_mins
                 
         return schedule
+
+    def _has_schedule_conflict(self, new_task: Task, current_schedule: List[Tuple[str, Task]]) -> bool:
+        """Compares interval times to detect schedule overlaps."""
+        new_start = new_task.due_time
+        new_end = new_start + timedelta(minutes=new_task.duration_mins)
+        
+        for _, scheduled_task in current_schedule:
+            sched_start = scheduled_task.due_time
+            sched_end = sched_start + timedelta(minutes=scheduled_task.duration_mins)
+            
+            if new_start < sched_end and sched_start < new_end:
+                return True
+        return False
+
+    def check_conflicts(self, new_task: Task) -> bool:
+        """Evaluates a single new task against all pending tasks for interval overlaps."""
+        return self._has_schedule_conflict(new_task, self.get_upcoming_tasks())
 
     def get_upcoming_tasks(self) -> List[Tuple[str, Task]]:
         """Sorts pending tasks chronologically to display upcoming requirements."""
@@ -105,25 +134,31 @@ class Scheduler:
         upcoming = [t for t in all_tasks if not t[1].is_completed]
         return sorted(upcoming, key=lambda x: x[1].due_time)
 
-    def check_conflicts(self, new_task: Task) -> bool:
-        """Compares execution times to detect schedule overlaps."""
-        for _, task in self.get_all_tasks():
-            if task.due_time == new_task.due_time:
-                return True
-        return False
+    def _get_next_id(self) -> int:
+        """Scans existing tasks to generate the next unique task ID."""
+        all_tasks = self.get_all_tasks()
+        if not all_tasks:
+            return 1
+        return max(task.id for _, task in all_tasks) + 1
 
     def generate_recurring_tasks(self) -> None:
-        """Duplicates completed daily tasks to sustain recurring schedules."""
+        """Duplicates completed recurring tasks to sustain schedules."""
+        frequency_map = {
+            "daily": timedelta(days=1),
+            "weekly": timedelta(weeks=1)
+        }
+        
         for pet in self.owner.pets:
             new_tasks = []
             for task in pet.tasks:
-                if task.frequency.lower() == "daily" and task.is_completed:
+                freq_key = task.frequency.lower()
+                if freq_key in frequency_map and task.is_completed:
                     new_task = Task(
-                        id=task.id + 1000, 
+                        id=self._get_next_id() + len(new_tasks), 
                         description=task.description,
                         duration_mins=task.duration_mins,
                         priority=task.priority,
-                        due_time=task.due_time + timedelta(days=1),
+                        due_time=task.due_time + frequency_map[freq_key],
                         frequency=task.frequency,
                         is_completed=False
                     )
