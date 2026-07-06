@@ -134,6 +134,19 @@ class Scheduler:
         upcoming = [t for t in all_tasks if not t[1].is_completed]
         return sorted(upcoming, key=lambda x: x[1].due_time)
 
+    def sort_by_time(self, task_list: List[Tuple[str, Task]]) -> List[Tuple[str, Task]]:
+        """Sorts tasks chronologically by their due time."""
+        return sorted(task_list, key=lambda x: x[1].due_time)
+
+    def filter_tasks(self, is_completed: Optional[bool] = None, pet_name: Optional[str] = None) -> List[Tuple[str, Task]]:
+        """Filters tasks by completion status and/or pet name."""
+        filtered = self.get_all_tasks(pet_name=pet_name)
+        
+        if is_completed is not None:
+            filtered = [item for item in filtered if item[1].is_completed == is_completed]
+            
+        return filtered
+
     def _get_next_id(self) -> int:
         """Scans existing tasks to generate the next unique task ID."""
         all_tasks = self.get_all_tasks()
