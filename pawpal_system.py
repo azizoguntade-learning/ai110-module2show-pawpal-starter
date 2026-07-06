@@ -92,7 +92,6 @@ class Scheduler:
                 if task.due_time.date() == target_date:
                     pending_tasks.append((pet.name, task))
                 
-        # Sort tasks by priority weight, then by due time
         sorted_tasks = sorted(
             pending_tasks, 
             key=lambda x: (priority_weights.get(x[1].priority.lower(), 4), x[1].due_time)
@@ -101,10 +100,8 @@ class Scheduler:
         schedule = []
         time_used = 0
         
-        # Knapsack-lite approach: continues evaluating remaining tasks even if a prior task exceeded time constraints
         for pet_name, task in sorted_tasks:
             if time_used + task.duration_mins <= self.owner.available_minutes:
-                # Interval overlap detection against already scheduled tasks
                 if not self._has_schedule_conflict(task, schedule):
                     schedule.append((pet_name, task))
                     time_used += task.duration_mins
@@ -124,9 +121,18 @@ class Scheduler:
                 return True
         return False
 
-    def check_conflicts(self, new_task: Task) -> bool:
-        """Evaluates a single new task against all pending tasks for interval overlaps."""
-        return self._has_schedule_conflict(new_task, self.get_upcoming_tasks())
+    def check_conflicts(self, new_task: Task) -> Optional[str]:
+            """Evaluates a new task against pending tasks and returns a warning message if an overlap exists."""
+            new_start = new_task.due_time
+            new_end = new_start + timedelta(minutes=new_task.duration_mins)
+            
+            for pet_name, scheduled_task in self.get_upcoming_tasks():
+                sched_start = scheduled_task.due_time
+                sched_end = sched_start + timedelta(minutes=scheduled_task.duration_mins)
+                
+                if new_start < sched_end and sched_start < new_end:
+                    return f"WARNING: '{new_task.description}' conflicts with {pet_name}'s scheduled '{scheduled_task.description}' at {sched_start.strftime('%I:%M %p')}."
+            return None
 
     def get_upcoming_tasks(self) -> List[Tuple[str, Task]]:
         """Sorts pending tasks chronologically to display upcoming requirements."""
@@ -154,26 +160,29 @@ class Scheduler:
             return 1
         return max(task.id for _, task in all_tasks) + 1
 
-    def generate_recurring_tasks(self) -> None:
-        """Duplicates completed recurring tasks to sustain schedules."""
+    def complete_task(self, pet_name: str, task_id: int) -> None:
+        """Marks a task complete and instantly generates the next occurrence if recurring."""
         frequency_map = {
             "daily": timedelta(days=1),
             "weekly": timedelta(weeks=1)
         }
         
         for pet in self.owner.pets:
-            new_tasks = []
-            for task in pet.tasks:
-                freq_key = task.frequency.lower()
-                if freq_key in frequency_map and task.is_completed:
-                    new_task = Task(
-                        id=self._get_next_id() + len(new_tasks), 
-                        description=task.description,
-                        duration_mins=task.duration_mins,
-                        priority=task.priority,
-                        due_time=task.due_time + frequency_map[freq_key],
-                        frequency=task.frequency,
-                        is_completed=False
-                    )
-                    new_tasks.append(new_task)
-            pet.tasks.extend(new_tasks)
+            if pet.name == pet_name:
+                for task in pet.tasks:
+                    if task.id == task_id and not task.is_completed:
+                        task.mark_complete()
+                        
+                        freq_key = task.frequency.lower()
+                        if freq_key in frequency_map:
+                            new_task = Task(
+                                id=self._get_next_id(),
+                                description=task.description,
+                                duration_mins=task.duration_mins,
+                                priority=task.priority,
+                                due_time=task.due_time + frequency_map[freq_key],
+                                frequency=task.frequency,
+                                is_completed=False
+                            )
+                            pet.add_task(new_task)
+                        return
