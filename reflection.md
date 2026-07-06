@@ -98,3 +98,17 @@ I would build a more robust priority weighting system inside the `Scheduler` to 
 
 - What is one important thing you learned about designing systems or working with AI on this project?
 I learned that while AI can assist with minor syntactical formatting, the developer must retain full control over the system's underlying logic. Strong architectural planning and independent problem-solving are essential for building a functional application.
+
+## 6. AI Strategy and Collaboration
+
+**a. Effective Features**
+The most effective AI coding assistant features were syntax validation and boilerplate generation (specifically for Python `@dataclass` structures). Offloading the repetitive typing allowed me to focus cognitive effort strictly on the algorithmic logic and data flow.
+
+**b. Preserving Clean Design**
+I have made the argument that AI suggestions often prioritize immediate execution over long-term architectural integrity. For example, the AI suggested utilizing a deeply nested list comprehension to retrieve all pet tasks in the `Owner` class. While syntactically concise, I rejected it in favor of explicit `for` loops. Explicit loops are significantly easier to debug and read for human developers, maintaining the clean design of the application.
+
+**c. Session Organization**
+Utilizing separate chat sessions for distinct phases (e.g., one session for UML mapping, a separate one for writing test cases) prevented the AI from conflating context. It kept the AI's output highly targeted and prevented it from prematurely generating UI code while I was still stabilizing the backend logic.
+
+**d. The Lead Architect Role**
+I learned that the human developer must act as the absolute filter for all generated code. Powerful AI tools are excellent at producing code rapidly, but they lack an innate understanding of the system's overarching context or constraints. Being the lead architect means rigorously evaluating every line of code against the project requirements and rejecting functional code if it compromises the system's structural logic.

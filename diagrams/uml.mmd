@@ -1,38 +1,48 @@
 classDiagram
-    %% Relationships
-    Scheduler "1" *-- "*" Pet : manages
-    Pet "1" *-- "*" Task : assigned
-
-    %% Classes
     class Task {
         +int id
-        +String description
+        +str description
         +int duration_mins
-        +String priority
-        +Datetime due_time
-        +String frequency
-        +Boolean is_completed
-        +mark_complete() Boolean
-        +update_priority(String new_priority) void
-        +reschedule(Datetime new_time) void
+        +str priority
+        +datetime due_time
+        +str frequency
+        +bool is_completed
+        +mark_complete() bool
+        +update_priority(new_priority: str) None
+        +reschedule(new_time: datetime) None
     }
 
     class Pet {
-        +String name
-        +String species
+        +str name
+        +str species
         +int age
         +List~Task~ tasks
-        +add_task(Task task) void
-        +remove_task(int task_id) void
+        +add_task(task: Task) None
+        +remove_task(task_id: int) None
         +get_pending_tasks() List~Task~
     }
 
-    class Scheduler {
+    class Owner {
+        +str name
+        +int available_minutes
         +List~Pet~ pets
-        +add_pet(Pet pet) void
-        +get_all_tasks() List~Tuple~
-        +build_schedule(int available_minutes) List~Task~
-        +get_upcoming_tasks() List~Task~
-        +check_conflicts(Task new_task) Boolean
-        +generate_recurring_tasks() void
+        +add_pet(pet: Pet) None
+        +get_all_pet_tasks(pet_name: str) List~Tuple~
     }
+
+    class Scheduler {
+        +Owner owner
+        +get_all_tasks(pet_name: str) List~Tuple~
+        +build_schedule(target_date: date) List~Tuple~
+        -_has_schedule_conflict(new_task: Task, current_schedule: List) bool
+        +check_conflicts(new_task: Task) str
+        +get_upcoming_tasks() List~Tuple~
+        +sort_by_time(task_list: List) List~Tuple~
+        +filter_tasks(is_completed: bool, pet_name: str) List~Tuple~
+        -_get_next_id() int
+        +complete_task(pet_name: str, task_id: int) None
+    }
+
+    Owner "1" *-- "many" Pet : owns
+    Pet "1" *-- "many" Task : has
+    Scheduler "1" o-- "1" Owner : manages
