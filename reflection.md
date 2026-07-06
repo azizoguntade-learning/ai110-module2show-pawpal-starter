@@ -19,6 +19,7 @@ Yes, minor adjustments were required for the method signatures to support the us
 
 - If yes, describe at least one change and why you made it.
 I changed the return type of the `Scheduler.build_schedule()` method from `List[Task]` to `List[Tuple[str, Task]]`. Initially, returning a flat list of tasks stripped away the context of which pet the task belonged to. By pairing the pet's name (string) with the `Task` object in a tuple, the UI can accurately display statements like "Feed Luna" instead of just "Feed", ensuring clear instructions when managing multiple pets.
+
 ---
 
 ## 2. Scheduling Logic and Tradeoffs
@@ -26,12 +27,18 @@ I changed the return type of the `Scheduler.build_schedule()` method from `List[
 **a. Constraints and priorities**
 
 - What constraints does your scheduler consider (for example: time, priority, preferences)?
+The scheduler evaluates the owner's total available time (in minutes), individual task durations, task priorities (high, medium, low), and strict time intervals to prevent overlapping schedules.
+
 - How did you decide which constraints mattered most?
+I have made the argument that hard constraints like available time and interval conflicts must take precedence to ensure a realistic and achievable schedule. Priority serves as a secondary sorting layer, ensuring critical care tasks are slotted into the available time before lower-priority enrichment activities.
 
 **b. Tradeoffs**
 
 - Describe one tradeoff your scheduler makes.
+I chose to implement a "Knapsack-lite" greedy algorithm for time management, alongside a strict interval overlap check for conflicts. The scheduler will slot tasks in one by one based on priority and stop evaluating a specific block of time once a conflict is detected, rather than attempting to calculate absolute maximum utilization across concurrent overlapping possibilities (e.g., assuming the owner could walk the dog and brush the cat at the exact same time).
+
 - Why is that tradeoff reasonable for this scenario?
+This is reasonable because pet care generally requires sequential, dedicated attention from a single owner. Calculating perfect concurrent multithreading for a single human user adds immense computational complexity for edge cases that do not accurately reflect real-world pet care workflows.
 
 ---
 
@@ -60,12 +67,18 @@ I analyzed the proposed data flow against the UI requirements. I engineered a co
 **a. What you tested**
 
 - What behaviors did you test?
+I implemented automated tests to verify sorting correctness, recurrence logic, and conflict detection. Specifically, I tested if tasks return in strict chronological order, if marking a daily task complete generates a new instance for the following day, and if the system properly flags overlapping intervals while permitting back-to-back abutting tasks.
+
 - Why were these tests important?
+These tests ensure the mathematical and chronological foundation of the application is stable. Validating these edge cases guarantees that the user will not be presented with an impossible schedule or experience data loss during task recurrence.
 
 **b. Confidence**
 
 - How confident are you that your scheduler works correctly?
+I am highly confident (5/5 stars) in the scheduler's current capabilities, as it consistently passes all automated boundary checks and logical constraints outlined in the testing suite.
+
 - What edge cases would you test next if you had more time?
+I would test tasks that bridge across midnight into a new calendar day, evaluate how the system handles null or malformed datetime inputs, and implement load testing to observe performance when an owner manages hundreds of recurring tasks.
 
 ---
 

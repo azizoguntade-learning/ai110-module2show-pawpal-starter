@@ -66,25 +66,32 @@ Sample test output:
 # Paste your pytest output here
 ```
 
+============================= test session starts =============================
+collected 4 items
+
+tests/test_pawpal.py::test_sorting_correctness PASSED                   [ 25%]
+tests/test_pawpal.py::test_recurrence_logic PASSED                      [ 50%]
+tests/test_pawpal.py::test_conflict_detection_overlap PASSED            [ 75%]
+tests/test_pawpal.py::test_conflict_detection_abutting PASSED           [100%]
+
+============================== 4 passed in 0.05s ==============================
+
 ## 📐 Smarter Scheduling
 
 > Fill in once you've implemented scheduling logic.
 
 | Feature | Method(s) | Notes |
 |---------|-----------|-------|
-| Task sorting | | e.g., by priority, duration |
-| Filtering | | e.g., skip tasks if time runs out |
-| Conflict handling | | e.g., overlapping time slots |
-| Recurring tasks | | e.g., daily vs. weekly |
-
+Task sorting |	Scheduler.sort_by_time() | Sort pending tasks chronologically using a lambda function to order the daily schedule.
+Filtering | Scheduler.filter_tasks() | Filter the master list by pet name and status to isolate relevant active  tasks.
+Conflict handling | Scheduler.check_conflicts() | Compare task intervals using overlap detection to return a lightweight warning message.
+Recurring tasks | Scheduler.complete_task() | Calculate timedelta using frequency maps to generate the next task occurrence automatically.
 ## 📸 Demo Walkthrough
 
 Describe your app in numbered steps so a reader can follow along without watching a video:
 
-1. <!-- Describe this step -->
-2. <!-- Describe this step -->
-3. <!-- Describe this step -->
-4. <!-- Describe this step -->
-5. <!-- Add more steps as needed -->
-
-**Screenshot or video** *(optional)*: <!-- Insert a screenshot or link to a demo video here -->
+1. Input owner and pet information into the UI to establish the system profiles.
+2. Add multiple tasks with varying durations and priorities to populate the pending list.
+3. Click the "Generate schedule" button to trigger the knapsack-lite and sorting algorithms.
+4. Review the displayed chronological schedule to confirm accurate time allocation without conflicts.
+5. Mark a daily task as complete to automatically generate its next occurrence for the following day.
